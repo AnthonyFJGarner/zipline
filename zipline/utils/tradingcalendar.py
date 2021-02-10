@@ -14,16 +14,35 @@
 # limitations under the License.
 import pandas as pd
 import pytz
+# import warnings
 
 from datetime import datetime
 from dateutil import rrule
 from functools import partial
 
+# from zipline.zipline_warnings import ZiplineDeprecationWarning
+
+# IMPORTANT: This module is deprecated and is only here for temporary backwards
+# compatibility.  Look at the `trading-calendars`
+# module, as well as the calendar definitions in `trading_calendars`.
+
+# TODO: The new calendar API is currently in flux, so the deprecation
+#       warning for this module is currently disabled. Re-enable once
+#       the new API is stabilized.
+#
+# warnings.warn(
+#     "The `tradingcalendar` module is deprecated. See the "
+#     "`trading-calendars` module,  as well as the "
+#     "calendar definitions in `trading-calendars`.",
+#     category=ZiplineDeprecationWarning,
+#     stacklevel=1,
+# )
+
 start = pd.Timestamp('1990-01-01', tz='UTC')
 end_base = pd.Timestamp('today', tz='UTC')
 # Give an aggressive buffer for logic that needs to use the next trading
 # day or minute.
-end = end_base + pd.datetools.relativedelta(years=1)
+end = end_base + pd.Timedelta(days=365)
 
 
 def canonicalize_datetime(dt):
@@ -198,7 +217,7 @@ def get_non_trading_days(start, end):
     non_trading_days = non_trading_ruleset.between(start, end, inc=True)
 
     # Add September 11th closings
-    # http://en.wikipedia.org/wiki/Aftermath_of_the_September_11_attacks
+    # https://en.wikipedia.org/wiki/Aftermath_of_the_September_11_attacks
     # Due to the terrorist attacks, the stock market did not open on 9/11/2001
     # It did not open again until 9/17/2001.
     #
@@ -216,7 +235,7 @@ def get_non_trading_days(start, end):
             datetime(2001, 9, day_num, tzinfo=pytz.utc))
 
     # Add closings due to Hurricane Sandy in 2012
-    # http://en.wikipedia.org/wiki/Hurricane_sandy
+    # https://en.wikipedia.org/wiki/Hurricane_sandy
     #
     # The stock exchange was closed due to Hurricane Sandy's
     # impact on New York.
@@ -247,6 +266,7 @@ def get_non_trading_days(start, end):
     non_trading_days.sort()
     return pd.DatetimeIndex(non_trading_days)
 
+
 non_trading_days = get_non_trading_days(start, end)
 trading_day = pd.tseries.offsets.CDay(holidays=non_trading_days)
 
@@ -256,12 +276,13 @@ def get_trading_days(start, end, trading_day=trading_day):
                          end=end.date(),
                          freq=trading_day).tz_localize('UTC')
 
+
 trading_days = get_trading_days(start, end)
 
 
 def get_early_closes(start, end):
     # 1:00 PM close rules based on
-    # http://quant.stackexchange.com/questions/4083/nyse-early-close-rules-july-4th-and-dec-25th # noqa
+    # https://quant.stackexchange.com/questions/4083/nyse-early-close-rules-july-4th-and-dec-25th # noqa
     # and verified against http://www.nyse.com/pdfs/closings.pdf
 
     # These rules are valid starting in 1993
@@ -365,6 +386,7 @@ def get_early_closes(start, end):
     early_closes.sort()
     return pd.DatetimeIndex(early_closes)
 
+
 early_closes = get_early_closes(start, end)
 
 
@@ -400,6 +422,7 @@ def get_open_and_closes(trading_days, early_closes, get_open_and_close):
         zip(*open_and_closes.index.map(get_o_and_c))
 
     return open_and_closes
+
 
 open_and_closes = get_open_and_closes(trading_days, early_closes,
                                       get_open_and_close)
